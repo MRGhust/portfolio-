@@ -187,9 +187,6 @@
 </head>
 <body class="bg-slate-950">
 
-    <!-- Font preloader element -->
-    <div style="font-family: 'Poppins', sans-serif; font-weight: 900; position: absolute; left: -9999px;">N</div>
-
     <!-- Canvas for 3D Wave background -->
     <canvas id="wave-canvas"></canvas>
 
@@ -469,12 +466,32 @@
                 requestAnimationFrame(animateLogo);
             }
             
-            // The preloader div in the HTML should have forced the font to load.
-            // We'll add a tiny delay just to be absolutely sure it's rendered and ready for the canvas.
-            setTimeout(() => {
+            // NEW: Bulletproof font loading check
+            function waitForFont(font, callback, timeout = 5000) {
+                let hasLoaded = false;
+                const startTime = Date.now();
+
+                function checkFont() {
+                    if (document.fonts.check(font)) {
+                        hasLoaded = true;
+                        callback();
+                    } else if (Date.now() - startTime >= timeout) {
+                        // Timeout reached, run callback anyway
+                        console.warn('Font loading timed out. Initializing logo with fallback.');
+                        callback();
+                    } else {
+                        // Font not ready, check again on the next frame
+                        requestAnimationFrame(checkFont);
+                    }
+                }
+                checkFont();
+            }
+
+            // Start the process
+            waitForFont('bold 150px Poppins', () => {
                 initLogo();
                 animateLogo();
-            }, 100); // 100ms delay is usually enough for the font to be ready.
+            });
 
 
             // --- Resize Handlers ---
