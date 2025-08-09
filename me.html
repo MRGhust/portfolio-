@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOBODY | Portfolio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
+
+    <!-- Three.js Library for wave background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* Custom styles for the page */
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #020617; /* A darker, richer blue-black */
+            color: #e0e0e0;
+            cursor: auto; 
+            overflow-x: hidden;
+        }
+
+        /* Canvases for 3D backgrounds */
+        #wave-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #logo-canvas {
+            position: absolute; 
+            width: 160px; 
+            height: 160px;
+            z-index: 10; 
+        }
+        #logo-container {
+            width: 160px;
+            height: 160px;
+            margin-bottom: 1.5rem; /* 24px */
+            position: relative;
+            cursor: pointer; 
+        }
+
+
+        /* Glassmorphism effect for containers */
+        .glass-container {
+            background-color: rgba(15, 23, 42, 0.8); /* slate-900 with opacity */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        
+        /* Navbar Styling */
+        .navbar {
+            transition: background-color 0.3s ease;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #38bdf8;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #38bdf8;
+        }
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        /* Project Card Styling */
+        .project-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .project-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(56, 189, 248, 0.15);
+        }
+        
+        /* Skill Tag Styling */
+        .tech-tag {
+            background-color: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            font-size: 0.875rem; /* 14px */
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            min-width: 120px; /* Ensure tags have a minimum width */
+            text-align: center;
+        }
+        .skill-text {
+            transition: opacity 0.3s ease;
+        }
+        .skill-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            font-size: 1.75rem; /* Larger icon */
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+        .tech-tag:hover .skill-text {
+            opacity: 0;
+        }
+        .tech-tag:hover .skill-icon {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+
+        /* Scroll Animation */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Section Title */
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            color: #fff;
+            position: relative;
+            padding-bottom: 0.75rem;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 4px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #38bdf8;
+            border-radius: 2px;
+        }
+
+        /* Typing cursor for the hero section */
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 2.5rem;
+            background-color: #38bdf8;
+            animation: blink 1s infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950">
+
+    <!-- Canvas for 3D Wave background -->
+    <canvas id="wave-canvas"></canvas>
+
+    <!-- Header & Navbar -->
+    <header id="navbar" class="navbar fixed top-0 left-0 right-0 z-50 p-4 glass-container mx-2 md:mx-auto mt-2 max-w-5xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold text-white font-['Poppins']">NOBODY</div>
+            <nav class="hidden md:flex space-x-8 text-lg">
+                <a href="#hero" class="nav-link active">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#projects" class="nav-link">Projects</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden text-2xl text-white">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 text-center">
+            <a href="#hero" class="block py-2 nav-link">Home</a>
+            <a href="#about" class="block py-2 nav-link">About</a>
+            <a href="#projects" class="block py-2 nav-link">Projects</a>
+            <a href="#contact" class="block py-2 nav-link">Contact</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pt-24">
+        <!-- Hero Section -->
+        <section id="hero" class="min-h-screen flex flex-col justify-center items-center text-center">
+            <!-- Interactive Dot Logo Container -->
+            <div id="logo-container">
+                <canvas id="logo-canvas"></canvas>
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl font-bold text-sky-400 mt-2">I'm NOBODY</h1>
+            <div class="text-2xl md:text-4xl font-bold text-white mt-4 h-12">
+                <span id="typing-effect"></span><span class="typing-cursor"></span>
+            </div>
+            <p class="max-w-2xl mx-auto mt-6 text-lg text-gray-300">
+                A developer passionate about building things for the web.
+            </p>
+            <a href="#projects" class="mt-8 px-8 py-3 bg-sky-500 text-white font-bold rounded-lg hover:bg-sky-600 transition-colors">
+                View My Work
+            </a>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="py-20 scroll-reveal">
+            <h2 class="section-title text-4xl text-center mb-12">About Me</h2>
+            <div class="glass-container p-8 md:p-12 max-w-4xl mx-auto">
+                <p class="text-gray-300 leading-loose text-center mb-10">
+                    I'm a developer with a professional-level command of Python and an intermediate understanding of various web technologies. I enjoy solving problems and am always eager to learn and grow my skills.
+                </p>
+                <div class="flex flex-col md:flex-row justify-center items-start gap-12">
+                    <!-- Expert Skills -->
+                    <div class="w-full md:w-1/3 text-center">
+                        <h4 class="text-2xl font-bold text-sky-400 mb-4">Expert</h4>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <span class="tech-tag">
+                                <span class="skill-text">Python</span>
+                                <i class="fab fa-python skill-icon"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Intermediate Skills -->
+                    <div class="w-full md:w-2/3 text-center">
+                        <h4 class="text-2xl font-bold text-sky-400 mb-4">Intermediate</h4>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <span class="tech-tag">
+                                <span class="skill-text">JavaScript</span>
+                                <i class="fab fa-js-square skill-icon"></i>
+                            </span>
+                            <span class="tech-tag">
+                                <span class="skill-text">React</span>
+                                <i class="fab fa-react skill-icon"></i>
+                            </span>
+                             <span class="tech-tag">
+                                <span class="skill-text">Node.js</span>
+                                <i class="fab fa-node-js skill-icon"></i>
+                            </span>
+                            <span class="tech-tag">
+                                <span class="skill-text">Git/GitHub</span>
+                                <i class="fab fa-github skill-icon"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="py-20 scroll-reveal">
+            <h2 class="section-title text-4xl text-center mb-12">My Projects</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Project Card 1 -->
+                <div class="project-card glass-container overflow-hidden">
+                    <img src="https://placehold.co/600x400/0f172a/38bdf8?text=Samping+Website" alt="Samping Website" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-white mb-3 font-['Poppins']">Samping Website</h3>
+                        <p class="text-gray-400 mb-4 text-sm">An e-commerce platform for showcasing and selling various products.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="tech-tag !min-w-0">E-commerce</span>
+                            <span class="tech-tag !min-w-0">Website</span>
+                        </div>
+                        <a href="https://samping.rioshops.ir/" target="_blank" class="text-sky-400 hover:text-sky-300 font-semibold">View Live Site <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                <!-- Project Card 2 -->
+                 <div class="project-card glass-container overflow-hidden">
+                    <img src="https://placehold.co/600x400/0f172a/38bdf8?text=Minecraft+AI+Bot" alt="Minecraft AI Bot" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-white mb-3 font-['Poppins']">Minecraft AI Bot</h3>
+                        <p class="text-gray-400 mb-4 text-sm">A machine learning project to create an intelligent bot for Minecraft.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="tech-tag !min-w-0">Machine Learning</span>
+                            <span class="tech-tag !min-w-0">Python</span>
+                        </div>
+                        <a href="https://github.com/MRGhust/Minecraft-Bot-Ai" target="_blank" class="text-sky-400 hover:text-sky-300 font-semibold">View on GitHub <i class="fab fa-github ml-2"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <footer id="contact" class="py-20 text-center scroll-reveal">
+            <h2 class="section-title text-4xl text-center mb-8">Get In Touch</h2>
+             <p class="text-gray-400 mb-8 max-w-lg mx-auto">I'm currently open to new opportunities. Feel free to reach out to me through my social channels.</p>
+            <div class="flex justify-center space-x-8 text-4xl">
+                <a href="https://github.com/MRGhust?tab=repositories" target="_blank" class="text-gray-400 hover:text-sky-400 transition-colors"><i class="fab fa-github"></i></a>
+                <a href="https://t.me/you3efIR" target="_blank" class="text-gray-400 hover:text-sky-400 transition-colors"><i class="fab fa-telegram"></i></a>
+                <a href="mailto:ylala4546@gmail.com" class="text-gray-400 hover:text-sky-400 transition-colors"><i class="fa fa-envelope"></i></a>
+            </div>
+            <p class="mt-12 text-gray-500">&copy; 2024 NOBODY - All Rights Reserved.</p>
+        </footer>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- 3D Wave Background ---
+            const waveCanvas = document.getElementById('wave-canvas');
+            const waveScene = new THREE.Scene();
+            const waveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const waveRenderer = new THREE.WebGLRenderer({ canvas: waveCanvas, alpha: true });
+            waveRenderer.setSize(window.innerWidth, window.innerHeight);
+            waveRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const planeGeometry = new THREE.PlaneGeometry(25, 25, 60, 60);
+            const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.3 });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            waveScene.add(plane);
+            waveCamera.position.z = 5;
+            waveCamera.position.y = 2.5;
+            const waveAmbientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            waveScene.add(waveAmbientLight);
+            const wavePointLight = new THREE.PointLight(0x38bdf8, 1);
+            wavePointLight.position.set(5, 5, 5);
+            waveScene.add(wavePointLight);
+            const originalVertices = plane.geometry.attributes.position.clone();
+            const clock = new THREE.Clock();
+            const targetMouse = new THREE.Vector2();
+            const currentMouse = new THREE.Vector2();
+            let scrollY = window.scrollY;
+            window.addEventListener('mousemove', (event) => {
+                targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+            function animateWave() {
+                requestAnimationFrame(animateWave);
+                const elapsedTime = clock.getElapsedTime();
+                currentMouse.x += (targetMouse.x - currentMouse.x) * 0.05;
+                currentMouse.y += (targetMouse.y - currentMouse.y) * 0.05;
+                const targetCameraY = 2.5 - scrollY * 0.005;
+                waveCamera.position.y += (targetCameraY - waveCamera.position.y) * 0.05;
+                const positions = plane.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const x = originalVertices.array[i];
+                    const y = originalVertices.array[i + 1];
+                    const z = Math.sin(x * 0.5 + elapsedTime) * 0.2 + Math.sin(y * 0.5 + elapsedTime) * 0.2;
+                    const mouseDistance = new THREE.Vector2(x, y).distanceTo(new THREE.Vector2(currentMouse.x * 12.5, currentMouse.y * -12.5));
+                    const hoverEffect = Math.max(0, 1 - mouseDistance / 5);
+                    positions[i + 2] = z + hoverEffect * 1.5;
+                }
+                plane.geometry.attributes.position.needsUpdate = true;
+                waveRenderer.render(waveScene, waveCamera);
+            }
+            animateWave();
+
+            // --- Interactive Dot Logo ---
+            const logoContainer = document.getElementById('logo-container');
+            const logoCanvas = document.getElementById('logo-canvas');
+            const ctx = logoCanvas.getContext('2d');
+            let particles = [];
+            const mouse = { x: null, y: null, radius: 40 };
+
+            logoCanvas.width = 160;
+            logoCanvas.height = 160;
+
+            logoContainer.addEventListener('mousemove', (event) => {
+                const rect = logoCanvas.getBoundingClientRect();
+                mouse.x = event.clientX - rect.left;
+                mouse.y = event.clientY - rect.top;
+            });
+            logoContainer.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.baseX = this.x;
+                    this.baseY = this.y;
+                    this.density = (Math.random() * 20) + 5;
+                    this.size = 1.5;
+                    this.color = '#38bdf8';
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                update() {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = mouse.radius;
+                    let force = (maxDistance - distance) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+
+                    if (distance < mouse.radius) {
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    } else {
+                        if (this.x !== this.baseX) { this.x -= (this.x - this.baseX) / 10; }
+                        if (this.y !== this.baseY) { this.y -= (this.y - this.baseY) / 10; }
+                    }
+                }
+            }
+
+            function initLogo() {
+                particles = [];
+                const offscreenCanvas = document.createElement('canvas');
+                const offscreenCtx = offscreenCanvas.getContext('2d');
+                offscreenCanvas.width = logoCanvas.width;
+                offscreenCanvas.height = logoCanvas.height;
+
+                offscreenCtx.fillStyle = 'white';
+                offscreenCtx.font = 'bold 150px Poppins';
+                offscreenCtx.textAlign = 'center';
+                offscreenCtx.textBaseline = 'middle';
+                offscreenCtx.fillText('N', offscreenCanvas.width / 2, offscreenCanvas.height / 2 + 5);
+
+                const imageData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+                const data = imageData.data;
+                
+                const gap = 4;
+                for (let y = 0; y < offscreenCanvas.height; y += gap) {
+                    for (let x = 0; x < offscreenCanvas.width; x += gap) {
+                        const alphaIndex = (y * offscreenCanvas.width + x) * 4 + 3;
+                        if (data[alphaIndex] > 128) {
+                            particles.push(new Particle(x, y));
+                        }
+                    }
+                }
+            }
+            
+            function animateLogo() {
+                ctx.clearRect(0, 0, logoCanvas.width, logoCanvas.height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
+                requestAnimationFrame(animateLogo);
+            }
+            initLogo();
+            animateLogo();
+
+
+            // --- Resize Handlers ---
+            window.addEventListener('resize', () => {
+                waveCamera.aspect = window.innerWidth / window.innerHeight;
+                waveCamera.updateProjectionMatrix();
+                waveRenderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Typing Effect ---
+            const typingElement = document.getElementById('typing-effect');
+            const words = ["Junior Developer", "Problem Solver", "Tech Enthusiast"];
+            let wordIndex = 0, charIndex = 0, isDeleting = false;
+            function type() {
+                const currentWord = words[wordIndex];
+                const typeSpeed = isDeleting ? 75 : 150;
+                if (isDeleting) {
+                    typingElement.textContent = currentWord.substring(0, charIndex--);
+                } else {
+                    typingElement.textContent = currentWord.substring(0, charIndex++);
+                }
+                if (!isDeleting && charIndex === currentWord.length + 1) {
+                    setTimeout(() => isDeleting = true, 2000);
+                } else if (isDeleting && charIndex < 0) {
+                    isDeleting = false;
+                    wordIndex = (wordIndex + 1) % words.length;
+                }
+                setTimeout(type, typeSpeed);
+            }
+            type();
+
+            // --- Mobile Menu Toggle ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // --- Navbar Active Link & Scroll Reveal ---
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const revealElements = document.querySelectorAll('.scroll-reveal');
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.id;
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                        });
+                    }
+                });
+            }, { rootMargin: '-40% 0px -40% 0px' });
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { root: null, threshold: 0.15 });
+            sections.forEach(section => sectionObserver.observe(section));
+            revealElements.forEach(el => revealObserver.observe(el));
+        });
+    </script>
+</body>
+</html>
