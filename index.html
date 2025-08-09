@@ -187,6 +187,9 @@
 </head>
 <body class="bg-slate-950">
 
+    <!-- Font preloader element -->
+    <div style="font-family: 'Poppins', sans-serif; font-weight: 900; position: absolute; left: -9999px;">N</div>
+
     <!-- Canvas for 3D Wave background -->
     <canvas id="wave-canvas"></canvas>
 
@@ -466,11 +469,12 @@
                 requestAnimationFrame(animateLogo);
             }
             
-            // Wait for fonts to be ready before initializing the logo
-            document.fonts.ready.then(function () {
+            // The preloader div in the HTML should have forced the font to load.
+            // We'll add a tiny delay just to be absolutely sure it's rendered and ready for the canvas.
+            setTimeout(() => {
                 initLogo();
                 animateLogo();
-            });
+            }, 100); // 100ms delay is usually enough for the font to be ready.
 
 
             // --- Resize Handlers ---
