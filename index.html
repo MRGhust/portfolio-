@@ -465,8 +465,12 @@
                 }
                 requestAnimationFrame(animateLogo);
             }
-            initLogo();
-            animateLogo();
+            
+            // Wait for fonts to be ready before initializing the logo
+            document.fonts.ready.then(function () {
+                initLogo();
+                animateLogo();
+            });
 
 
             // --- Resize Handlers ---
