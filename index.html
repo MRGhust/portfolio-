@@ -21,7 +21,11 @@
 
     <!-- Three.js Library for wave background -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
+    
+    <!-- GSAP for advanced animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
     <style>
         /* Custom styles for the page */
         html {
@@ -35,7 +39,7 @@
             overflow-x: hidden;
         }
 
-        /* Canvases for 3D backgrounds */
+        /* Canvas for Wave background */
         #wave-canvas {
             position: fixed;
             top: 0;
@@ -44,24 +48,40 @@
             height: 100%;
             z-index: -1;
         }
-        #logo-canvas {
-            position: absolute; 
-            width: 160px; 
-            height: 160px;
-            z-index: 10; 
+        
+        /* Hero Section and Logo Canvas Styling */
+        #hero {
+            position: relative;
         }
         #logo-container {
-            width: 160px;
-            height: 160px;
-            margin-bottom: 1.5rem; /* 24px */
+            width: 300px;  /* Smaller size */
+            height: 300px; /* Smaller size */
+            margin-bottom: 2rem;
+            cursor: pointer;
             position: relative;
-            cursor: pointer; 
+        }
+        #logo-canvas {
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%;
         }
 
+        /* Hero content wrapper to keep it above the canvas */
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
 
         /* Glassmorphism effect for containers */
         .glass-container {
-            background-color: rgba(15, 23, 42, 0.8); /* slate-900 with opacity */
+            background-color: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -93,6 +113,12 @@
         .nav-link:hover::after, .nav-link.active::after {
             width: 100%;
         }
+        
+        #logo-text-placeholder {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            color: #fff;
+        }
 
         /* Project Card Styling */
         .project-card {
@@ -107,13 +133,13 @@
         .tech-tag {
             background-color: rgba(56, 189, 248, 0.1);
             color: #38bdf8;
-            font-size: 0.875rem; /* 14px */
+            font-size: 0.875rem;
             padding: 0.5rem 1rem;
             border-radius: 9999px;
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
-            min-width: 120px; /* Ensure tags have a minimum width */
+            min-width: 120px;
             text-align: center;
         }
         .skill-text {
@@ -125,7 +151,7 @@
             left: 50%;
             transform: translate(-50%, -50%) scale(0);
             opacity: 0;
-            font-size: 1.75rem; /* Larger icon */
+            font-size: 1.75rem;
             transition: all 0.3s ease;
             color: #fff;
         }
@@ -135,18 +161,6 @@
         .tech-tag:hover .skill-icon {
             transform: translate(-50%, -50%) scale(1);
             opacity: 1;
-        }
-
-
-        /* Scroll Animation */
-        .scroll-reveal {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-        }
-        .scroll-reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
         }
         
         /* Section Title */
@@ -183,17 +197,46 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
+
+        /* Matrix Easter Egg Styles */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: none; /* Hidden by default */
+        }
+        #matrix-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0F0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #0F0;
+            z-index: 10001;
+            display: none;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-slate-950">
-
+    
     <!-- Canvas for 3D Wave background -->
     <canvas id="wave-canvas"></canvas>
+    
+    <!-- Canvas for Matrix Easter Egg -->
+    <canvas id="matrix-canvas"></canvas>
+    <div id="matrix-message">You've entered the Matrix.<br>Press ESC to return.</div>
 
     <!-- Header & Navbar -->
     <header id="navbar" class="navbar fixed top-0 left-0 right-0 z-50 p-4 glass-container mx-2 md:mx-auto mt-2 max-w-5xl">
         <div class="container mx-auto flex justify-between items-center">
-            <div class="text-2xl font-bold text-white font-['Poppins']">NOBODY</div>
+            <div id="logo-text-placeholder" class="text-2xl">NOBODY</div>
             <nav class="hidden md:flex space-x-8 text-lg">
                 <a href="#hero" class="nav-link active">Home</a>
                 <a href="#about" class="nav-link">About</a>
@@ -213,28 +256,29 @@
         </div>
     </header>
 
-    <main class="container mx-auto px-4 pt-24">
+    <main id="main-content" class="container mx-auto px-4 pt-24 relative z-10">
         <!-- Hero Section -->
         <section id="hero" class="min-h-screen flex flex-col justify-center items-center text-center">
-            <!-- Interactive Dot Logo Container -->
-            <div id="logo-container">
-                <canvas id="logo-canvas"></canvas>
+            <div class="hero-content">
+                <!-- Interactive Liquid Logo Container -->
+                <div id="logo-container">
+                    <canvas id="logo-canvas"></canvas>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold text-sky-400 mt-2">I'm NOBODY</h1>
+                <div class="text-2xl md:text-4xl font-bold text-white mt-4 h-12">
+                    <span id="typing-effect"></span><span class="typing-cursor"></span>
+                </div>
+                <p class="max-w-2xl mx-auto mt-6 text-lg text-gray-300">
+                    A developer passionate about building things for the web.
+                </p>
+                <a href="#projects" class="mt-8 px-8 py-3 bg-sky-500 text-white font-bold rounded-lg hover:bg-sky-600 transition-colors">
+                    View My Work
+                </a>
             </div>
-            
-            <h1 class="text-4xl md:text-5xl font-bold text-sky-400 mt-2">I'm NOBODY</h1>
-            <div class="text-2xl md:text-4xl font-bold text-white mt-4 h-12">
-                <span id="typing-effect"></span><span class="typing-cursor"></span>
-            </div>
-            <p class="max-w-2xl mx-auto mt-6 text-lg text-gray-300">
-                A developer passionate about building things for the web.
-            </p>
-            <a href="#projects" class="mt-8 px-8 py-3 bg-sky-500 text-white font-bold rounded-lg hover:bg-sky-600 transition-colors">
-                View My Work
-            </a>
         </section>
 
         <!-- About Section -->
-        <section id="about" class="py-20 scroll-reveal">
+        <section id="about" class="py-20">
             <h2 class="section-title text-4xl text-center mb-12">About Me</h2>
             <div class="glass-container p-8 md:p-12 max-w-4xl mx-auto">
                 <p class="text-gray-300 leading-loose text-center mb-10">
@@ -278,7 +322,7 @@
         </section>
 
         <!-- Projects Section -->
-        <section id="projects" class="py-20 scroll-reveal">
+        <section id="projects" class="py-20">
             <h2 class="section-title text-4xl text-center mb-12">My Projects</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 <!-- Project Card 1 -->
@@ -311,7 +355,7 @@
         </section>
 
         <!-- Contact Section -->
-        <footer id="contact" class="py-20 text-center scroll-reveal">
+        <footer id="contact" class="py-20 text-center">
             <h2 class="section-title text-4xl text-center mb-8">Get In Touch</h2>
              <p class="text-gray-400 mb-8 max-w-lg mx-auto">I'm currently open to new opportunities. Feel free to reach out to me through my social channels.</p>
             <div class="flex justify-center space-x-8 text-4xl">
@@ -325,6 +369,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            gsap.registerPlugin(ScrollTrigger);
+
             // --- 3D Wave Background ---
             const waveCanvas = document.getElementById('wave-canvas');
             const waveScene = new THREE.Scene();
@@ -346,27 +392,29 @@
             waveScene.add(wavePointLight);
             const originalVertices = plane.geometry.attributes.position.clone();
             const clock = new THREE.Clock();
-            const targetMouse = new THREE.Vector2();
-            const currentMouse = new THREE.Vector2();
-            let scrollY = window.scrollY;
+            const targetMouseForWave = new THREE.Vector2();
+            const currentMouseForWave = new THREE.Vector2(); // **FIX:** Added for smoothing
+
             window.addEventListener('mousemove', (event) => {
-                targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                targetMouseForWave.x = (event.clientX / window.innerWidth) * 2 - 1;
+                targetMouseForWave.y = -(event.clientY / window.innerHeight) * 2 + 1;
             });
-            window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
             function animateWave() {
                 requestAnimationFrame(animateWave);
                 const elapsedTime = clock.getElapsedTime();
-                currentMouse.x += (targetMouse.x - currentMouse.x) * 0.05;
-                currentMouse.y += (targetMouse.y - currentMouse.y) * 0.05;
-                const targetCameraY = 2.5 - scrollY * 0.005;
-                waveCamera.position.y += (targetCameraY - waveCamera.position.y) * 0.05;
+                
+                // **FIX:** Smoothly interpolate the mouse position for the wave
+                currentMouseForWave.x += (targetMouseForWave.x - currentMouseForWave.x) * 0.05;
+                currentMouseForWave.y += (targetMouseForWave.y - currentMouseForWave.y) * 0.05;
+
                 const positions = plane.geometry.attributes.position.array;
                 for (let i = 0; i < positions.length; i += 3) {
                     const x = originalVertices.array[i];
                     const y = originalVertices.array[i + 1];
                     const z = Math.sin(x * 0.5 + elapsedTime) * 0.2 + Math.sin(y * 0.5 + elapsedTime) * 0.2;
-                    const mouseDistance = new THREE.Vector2(x, y).distanceTo(new THREE.Vector2(currentMouse.x * 12.5, currentMouse.y * -12.5));
+                    // Use the smoothed mouse position
+                    const mouseDistance = new THREE.Vector2(x, y).distanceTo(new THREE.Vector2(currentMouseForWave.x * 12.5, currentMouseForWave.y * -12.5));
                     const hoverEffect = Math.max(0, 1 - mouseDistance / 5);
                     positions[i + 2] = z + hoverEffect * 1.5;
                 }
@@ -375,269 +423,197 @@
             }
             animateWave();
 
-            // --- IMPROVED Interactive N Logo (Canvas particles) ---
+            // --- Parallax and GSAP Scroll Animations ---
+            gsap.to(waveCamera.position, {
+                y: -5,
+                 scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: 1.5,
+                }
+            });
+
+            const sections = document.querySelectorAll('section:not(#hero)');
+            sections.forEach(section => {
+                const elementsToAnimate = section.querySelectorAll('h2, .glass-container > *, .project-card, footer > *');
+                gsap.from(elementsToAnimate, {
+                    opacity: 0,
+                    y: 50,
+                    duration: 1,
+                    stagger: 0.1,
+                    scrollTrigger: {
+                        trigger: section,
+                        start: 'top 80%',
+                        end: 'bottom 20%',
+                        toggleActions: 'play none none none',
+                    }
+                });
+            });
+
+            // --- LIQUID SIMULATION N LOGO ---
             const logoContainer = document.getElementById('logo-container');
             const logoCanvas = document.getElementById('logo-canvas');
             const ctx = logoCanvas.getContext('2d');
             let particles = [];
-            const mouse = { x: null, y: null, radius: 50, isDown: false };
+            const mouse = { x: null, y: null, radius: 150 };
 
-            // ensure canvas size matches styles (pixel ratio aware)
             function resizeLogoCanvas() {
-                const rect = logoCanvas.getBoundingClientRect();
+                const rect = logoContainer.getBoundingClientRect();
                 const ratio = Math.min(window.devicePixelRatio || 1, 2);
-                logoCanvas.width = Math.round(rect.width * ratio);
-                logoCanvas.height = Math.round(rect.height * ratio);
-                logoCanvas.style.width = rect.width + 'px';
-                logoCanvas.style.height = rect.height + 'px';
+                logoCanvas.width = rect.width * ratio;
+                logoCanvas.height = rect.height * ratio;
                 ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
             }
 
-            // Particle class — smoother movement, attraction/repel, idle float
             class Particle {
-                constructor(x, y, color) {
+                constructor(x, y) {
                     this.baseX = x;
                     this.baseY = y;
-                    this.x = x + (Math.random() - 0.5) * 20;
-                    this.y = y + (Math.random() - 0.5) * 20;
-                    this.vx = (Math.random() - 0.5) * 0.5;
-                    this.vy = (Math.random() - 0.5) * 0.5;
-                    this.size = 1.6 + Math.random() * 1.4;
-                    this.color = color || '#38bdf8';
-                    this.friction = 0.92 + Math.random() * 0.05;
-                    this.ease = 0.08 + Math.random() * 0.04;
-                    this.noiseOffset = Math.random() * 1000;
+                    this.x = x;
+                    this.y = y;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.size = 1.5 + Math.random() * 1;
+                    this.color = '#38bdf8';
                 }
                 draw() {
-                    ctx.beginPath();
                     ctx.fillStyle = this.color;
+                    ctx.beginPath();
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                update(time) {
-                    // idle floating via slow sinus
-                    const floatX = Math.sin((time + this.noiseOffset) * 0.6) * 0.6;
-                    const floatY = Math.cos((time + this.noiseOffset) * 0.6) * 0.6;
-
-                    // attraction to base (spring)
-                    const dx = this.baseX - this.x + floatX;
-                    const dy = this.baseY - this.y + floatY;
-                    this.vx += dx * this.ease;
-                    this.vy += dy * this.ease;
-
-                    // mouse interaction (repel when close, attract slightly on hover)
-                    if (mouse.x !== null && mouse.y !== null) {
-                        const mx = mouse.x;
-                        const my = mouse.y;
-                        const distX = this.x - mx;
-                        const distY = this.y - my;
-                        const dist = Math.sqrt(distX * distX + distY * distY);
+                update() {
+                    if (mouse.x !== null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
                         if (dist < mouse.radius) {
-                            // stronger repel when mouse pressed
-                            const force = (1 - dist / mouse.radius) * (mouse.isDown ? 6 : 2);
-                            const dirX = distX / (dist || 1);
-                            const dirY = distY / (dist || 1);
-                            this.vx += dirX * force;
-                            this.vy += dirY * force;
-                        } else if (dist < mouse.radius * 1.8) {
-                            // slight attraction zone for subtle pull
-                            const pull = 0.02;
-                            this.vx -= distX / (dist || 1) * pull;
-                            this.vy -= distY / (dist || 1) * pull;
+                            let force = (mouse.radius - dist) / mouse.radius;
+                            let angle = Math.atan2(dy, dx);
+                            this.vx -= force * Math.cos(angle) * 0.5;
+                            this.vy -= force * Math.sin(angle) * 0.5;
                         }
                     }
 
-                    // apply velocity & friction
-                    this.vx *= this.friction;
-                    this.vy *= this.friction;
+                    this.vx += (this.baseX - this.x) * 0.01;
+                    this.vy += (this.baseY - this.y) * 0.01;
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
                     this.x += this.vx;
                     this.y += this.vy;
                 }
+                 applyForce(fx, fy) {
+                    this.vx += fx;
+                    this.vy += fy;
+                }
             }
 
-            // Create particles from big 'N' drawn to offscreen canvas, but with finer sampling
             function initLogoParticles() {
                 particles = [];
+                const rect = logoContainer.getBoundingClientRect();
                 const off = document.createElement('canvas');
                 const offCtx = off.getContext('2d');
-                // keep offscreen size relative to display for crispness
-                const W = 160;
-                const H = 160;
+                
+                const W = rect.width;
+                const H = rect.height;
                 off.width = W;
                 off.height = H;
-                offCtx.clearRect(0, 0, W, H);
 
-                // background (transparent) and centered N
                 offCtx.fillStyle = 'white';
-                // pick a bold Poppins-like font fallback if not available
-                offCtx.font = 'bold 130px Poppins, Arial';
+                const fontSize = Math.min(W * 1.2, H * 1.2);
+                offCtx.font = `bold ${fontSize}px Poppins, Arial`;
                 offCtx.textAlign = 'center';
                 offCtx.textBaseline = 'middle';
-                offCtx.fillText('N', W / 2, H / 2 + 6);
+                offCtx.fillText('N', W / 2, H / 2 + fontSize * 0.05);
 
                 const imgData = offCtx.getImageData(0, 0, W, H);
                 const data = imgData.data;
-
-                // sample gap chosen to balance density and performance
-                const gap = 3; // finer than before -> smoother shape
-                // create a palette gradient for lively effect
-                const palette = [];
-                for (let i = 0; i < 1.0; i += 0.02) {
-                    // gradient from cyan to light blue to white
-                    const r = Math.floor(56 + (200 - 56) * i);
-                    const g = Math.floor(189 + (230 - 189) * i);
-                    const b = Math.floor(248 + (255 - 248) * i);
-                    palette.push(`rgb(${r},${g},${b})`);
-                }
+                const gap = window.innerWidth < 768 ? 4 : 5;
 
                 for (let y = 0; y < H; y += gap) {
                     for (let x = 0; x < W; x += gap) {
-                        const idx = (y * W + x) * 4 + 3;
-                        if (data[idx] > 150) {
-                            // map to canvas coordinates (maintain padding)
-                            const mappedX = (x / W) * logoCanvas.width;
-                            const mappedY = (y / H) * logoCanvas.height;
-                            // choose color slightly by x position for gradient effect
-                            const colorIdx = Math.floor((x / W) * (palette.length - 1));
-                            const color = palette[colorIdx];
-                            particles.push(new Particle(mappedX, mappedY, color));
+                        if (data[(y * W + x) * 4 + 3] > 150) {
+                            particles.push(new Particle(x, y));
                         }
                     }
                 }
             }
 
-            // animation loop
-            let lastTime = 0;
-            function animateLogo(timeStamp) {
-                const t = timeStamp / 1000;
-                ctx.clearRect(0, 0, logoCanvas.width, logoCanvas.height);
-
-                // draw subtle glow background circle behind logo (scaled)
-                ctx.save();
-                const centerX = logoCanvas.width / 2;
-                const centerY = logoCanvas.height / 2;
-                const glowRadius = Math.min(logoCanvas.width, logoCanvas.height) * 0.48;
-                const gradient = ctx.createRadialGradient(centerX, centerY, glowRadius * 0.1, centerX, centerY, glowRadius);
-                gradient.addColorStop(0, 'rgba(56,189,248,0.12)');
-                gradient.addColorStop(0.6, 'rgba(56,189,248,0.04)');
-                gradient.addColorStop(1, 'rgba(3,6,10,0)');
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, glowRadius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
+            function animateLogo() {
+                const rect = logoContainer.getBoundingClientRect();
+                const ratio = logoCanvas.width / rect.width;
+                ctx.clearRect(0, 0, logoCanvas.width / ratio, logoCanvas.height / ratio);
                 for (let i = 0; i < particles.length; i++) {
-                    particles[i].update(t);
-                }
-
-                // draw connecting lines lightly for a more 'tech' feel, but keep subtle
-                ctx.beginPath();
-                for (let i = 0; i < particles.length; i++) {
-                    const p = particles[i];
-                    // connect nearby particles (limit checks for perf)
-                    for (let j = i + 1; j < i + 6 && j < particles.length; j++) {
-                        const q = particles[j];
-                        const dx = p.x - q.x;
-                        const dy = p.y - q.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 14) {
-                            ctx.moveTo(p.x, p.y);
-                            ctx.lineTo(q.x, q.y);
-                        }
-                    }
-                }
-                ctx.strokeStyle = 'rgba(56,189,248,0.06)';
-                ctx.lineWidth = 0.8;
-                ctx.stroke();
-
-                // draw particles on top
-                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
                     particles[i].draw();
                 }
-
-                lastTime = t;
                 requestAnimationFrame(animateLogo);
             }
 
-            // Handle mouse on logo area (convert coordinates)
             function updateMousePos(evt) {
                 const rect = logoCanvas.getBoundingClientRect();
-                const ratio = logoCanvas.width / rect.width;
-                mouse.x = (evt.clientX - rect.left) * ratio;
-                mouse.y = (evt.clientY - rect.top) * ratio;
+                // **FIX:** The coordinate system needs to match the particle system.
+                // We calculate the mouse position relative to the canvas element.
+                mouse.x = evt.clientX - rect.left;
+                mouse.y = evt.clientY - rect.top;
             }
 
-            logoContainer.addEventListener('mousemove', (e) => {
-                updateMousePos(e);
-            });
-            logoContainer.addEventListener('mouseleave', () => {
-                mouse.x = null;
-                mouse.y = null;
-            });
-            logoContainer.addEventListener('mousedown', (e) => {
-                mouse.isDown = true;
-                // small pulse: temporarily increase radius
-                const original = mouse.radius;
-                mouse.radius = 100;
-                setTimeout(() => { mouse.radius = original; mouse.isDown = false; }, 180);
-            });
-            // also support touch
+            logoContainer.addEventListener('mousemove', updateMousePos);
+            logoContainer.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
             logoContainer.addEventListener('touchstart', (e) => {
-                const touch = e.touches[0];
-                if (!touch) return;
-                updateMousePos(touch);
-                mouse.isDown = true;
-                const original = mouse.radius;
-                mouse.radius = 100;
-                setTimeout(() => { mouse.radius = original; mouse.isDown = false; }, 180);
+                if (e.touches[0]) updateMousePos(e.touches[0]);
             }, { passive: true });
             logoContainer.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                if (!touch) return;
-                updateMousePos(touch);
+                if (e.touches[0]) updateMousePos(e.touches[0]);
             }, { passive: true });
-            logoContainer.addEventListener('touchend', () => {
-                mouse.x = null;
-                mouse.y = null;
-                mouse.isDown = false;
+            logoContainer.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
+            
+            logoContainer.addEventListener('click', (e) => {
+                const rect = logoCanvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                particles.forEach(p => {
+                    const dx = p.x - clickX;
+                    const dy = p.y - clickY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 100) {
+                        const force = (1 - dist / 100) * 10;
+                        p.applyForce(dx/dist * force, dy/dist * force);
+                    }
+                });
             });
 
-            // font load guard (same as before) to reduce layout flash
             function waitForFont(font, callback, timeout = 5000) {
                 const startTime = Date.now();
                 function check() {
-                    if (document.fonts && document.fonts.check && document.fonts.check(font)) {
-                        callback();
-                    } else if (Date.now() - startTime >= timeout) {
-                        callback(); // fallback
-                    } else {
-                        requestAnimationFrame(check);
-                    }
+                    if (document.fonts && document.fonts.check && document.fonts.check(font)) { callback(); } 
+                    else if (Date.now() - startTime >= timeout) { callback(); } 
+                    else { requestAnimationFrame(check); }
                 }
                 check();
             }
 
-            // initialize safely
             function startLogo() {
                 resizeLogoCanvas();
                 initLogoParticles();
-                requestAnimationFrame(animateLogo);
+                animateLogo();
             }
 
-            // on resize, re-init particles to keep shape crisp
             let resizeTimeout;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
-                    resizeLogoCanvas();
-                    initLogoParticles();
-                }, 120);
+                    startLogo();
+                    waveRenderer.setSize(window.innerWidth, window.innerHeight);
+                    waveCamera.aspect = window.innerWidth / window.innerHeight;
+                    waveCamera.updateProjectionMatrix();
+                }, 250);
             });
 
             waitForFont('bold 130px Poppins', () => {
-                // small delay to ensure layout
-                setTimeout(() => startLogo(), 30);
+                setTimeout(() => startLogo(), 50);
             });
 
             // --- Typing Effect ---
@@ -669,10 +645,9 @@
                 mobileMenu.classList.toggle('hidden');
             });
 
-            // --- Navbar Active Link & Scroll Reveal ---
-            const sections = document.querySelectorAll('section');
+            // --- Navbar Active Link ---
+            const sectionsForNav = document.querySelectorAll('section');
             const navLinks = document.querySelectorAll('.nav-link');
-            const revealElements = document.querySelectorAll('.scroll-reveal');
             const sectionObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -683,16 +658,86 @@
                     }
                 });
             }, { rootMargin: '-40% 0px -40% 0px' });
-            const revealObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
+            sectionsForNav.forEach(section => sectionObserver.observe(section));
+
+            // --- Matrix Easter Egg ---
+            let clickCount = 0;
+            let clickTimeout;
+            let matrixActive = false;
+            let matrixAnimationId;
+
+            logoContainer.addEventListener('click', () => {
+                if (matrixActive) return;
+                clickCount++;
+                clearTimeout(clickTimeout);
+                if (clickCount >= 7) {
+                    activateMatrix();
+                    clickCount = 0;
+                }
+                clickTimeout = setTimeout(() => {
+                    clickCount = 0;
+                }, 1000);
+            });
+            
+            function activateMatrix() {
+                matrixActive = true;
+                const matrixCanvas = document.getElementById('matrix-canvas');
+                const matrixMessage = document.getElementById('matrix-message');
+                matrixCanvas.style.display = 'block';
+                matrixMessage.style.display = 'block';
+
+                const m_ctx = matrixCanvas.getContext('2d');
+                matrixCanvas.width = window.innerWidth;
+                matrixCanvas.height = window.innerHeight;
+
+                const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+                const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const nums = '0123456789';
+                const alphabet = katakana + latin + nums;
+
+                const fontSize = 16;
+                const columns = matrixCanvas.width / fontSize;
+                const rainDrops = [];
+
+                for (let x = 0; x < columns; x++) {
+                    rainDrops[x] = 1;
+                }
+
+                const drawMatrix = () => {
+                    m_ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    m_ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+                    m_ctx.fillStyle = '#0F0';
+                    m_ctx.font = fontSize + 'px monospace';
+
+                    for (let i = 0; i < rainDrops.length; i++) {
+                        const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                        m_ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+                        if (rainDrops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+                            rainDrops[i] = 0;
+                        }
+                        rainDrops[i]++;
                     }
-                });
-            }, { root: null, threshold: 0.15 });
-            sections.forEach(section => sectionObserver.observe(section));
-            revealElements.forEach(el => revealObserver.observe(el));
+                    matrixAnimationId = requestAnimationFrame(drawMatrix);
+                };
+                drawMatrix();
+
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        deactivateMatrix();
+                    }
+                }, { once: true });
+            }
+
+            function deactivateMatrix() {
+                matrixActive = false;
+                cancelAnimationFrame(matrixAnimationId);
+                const matrixCanvas = document.getElementById('matrix-canvas');
+                const matrixMessage = document.getElementById('matrix-message');
+                matrixCanvas.style.display = 'none';
+                matrixMessage.style.display = 'none';
+            }
         });
     </script>
 </body>
