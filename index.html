@@ -379,22 +379,33 @@
             const waveRenderer = new THREE.WebGLRenderer({ canvas: waveCanvas, alpha: true });
             waveRenderer.setSize(window.innerWidth, window.innerHeight);
             waveRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            const planeGeometry = new THREE.PlaneGeometry(25, 25, 60, 60);
-            const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.3 });
+            
+            // Create a much larger plane for extended background from left and right
+            const planeGeometry = new THREE.PlaneGeometry(100, 25, 200, 60); // Increased width to 100
+            const planeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x38bdf8, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.3 
+            });
             const plane = new THREE.Mesh(planeGeometry, planeMaterial);
             plane.rotation.x = -Math.PI / 2;
             waveScene.add(plane);
+            
+            // Keep camera position the same
             waveCamera.position.z = 5;
             waveCamera.position.y = 2.5;
+            
             const waveAmbientLight = new THREE.AmbientLight(0xffffff, 0.5);
             waveScene.add(waveAmbientLight);
             const wavePointLight = new THREE.PointLight(0x38bdf8, 1);
             wavePointLight.position.set(5, 5, 5);
             waveScene.add(wavePointLight);
+            
             const originalVertices = plane.geometry.attributes.position.clone();
             const clock = new THREE.Clock();
             const targetMouseForWave = new THREE.Vector2();
-            const currentMouseForWave = new THREE.Vector2(); // **FIX:** Added for smoothing
+            const currentMouseForWave = new THREE.Vector2();
 
             window.addEventListener('mousemove', (event) => {
                 targetMouseForWave.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -405,7 +416,6 @@
                 requestAnimationFrame(animateWave);
                 const elapsedTime = clock.getElapsedTime();
                 
-                // **FIX:** Smoothly interpolate the mouse position for the wave
                 currentMouseForWave.x += (targetMouseForWave.x - currentMouseForWave.x) * 0.05;
                 currentMouseForWave.y += (targetMouseForWave.y - currentMouseForWave.y) * 0.05;
 
@@ -414,8 +424,9 @@
                     const x = originalVertices.array[i];
                     const y = originalVertices.array[i + 1];
                     const z = Math.sin(x * 0.5 + elapsedTime) * 0.2 + Math.sin(y * 0.5 + elapsedTime) * 0.2;
-                    // Use the smoothed mouse position
-                    const mouseDistance = new THREE.Vector2(x, y).distanceTo(new THREE.Vector2(currentMouseForWave.x * 12.5, currentMouseForWave.y * -12.5));
+                    
+                    // Adjust mouse interaction for the wider plane
+                    const mouseDistance = new THREE.Vector2(x, y).distanceTo(new THREE.Vector2(currentMouseForWave.x * 50, currentMouseForWave.y * -12.5));
                     const hoverEffect = Math.max(0, 1 - mouseDistance / 5);
                     positions[i + 2] = z + hoverEffect * 1.5;
                 }
@@ -427,7 +438,7 @@
             // --- Parallax and GSAP Scroll Animations ---
             gsap.to(waveCamera.position, {
                 y: -5,
-                 scrollTrigger: {
+                scrollTrigger: {
                     trigger: "body",
                     start: "top top",
                     end: "bottom top",
@@ -554,8 +565,6 @@
 
             function updateMousePos(evt) {
                 const rect = logoCanvas.getBoundingClientRect();
-                // **FIX:** The coordinate system needs to match the particle system.
-                // We calculate the mouse position relative to the canvas element.
                 mouse.x = evt.clientX - rect.left;
                 mouse.y = evt.clientY - rect.top;
             }
