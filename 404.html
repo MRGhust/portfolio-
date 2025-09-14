@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>404 Not Found | NOBODY</title>
+
+    <meta name="description" content="404 - Page not found on NOBODY's portfolio.">
+    <meta name="author" content="NOBODY - nobodydv.ir">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23020617'/><text y='.9em' font-size='90' fill='%2338bdf8'>N</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        /* Inheriting styles from your original site for consistency */
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #020617; /* Rich blue-black background */
+            color: #e0e0e0;
+            overflow: hidden; /* Prevent scrolling on 404 page */
+        }
+
+        /* Canvas for Wave background */
+        #wave-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        /* Main container for 404 content */
+        .error-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        /* Glassmorphism effect for the content box */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        /* Styling for the main error heading */
+        .error-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 6rem;
+            color: #38bdf8; /* Sky blue accent */
+            line-height: 1;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        /* Styling for the subtitle/message */
+        .error-subtitle {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 0.5rem;
+        }
+
+        /* Styling for the descriptive paragraph */
+        .error-text {
+            color: #cbd5e1; /* Lighter gray for readability */
+            margin-top: 1.5rem;
+            font-size: 1.125rem;
+        }
+
+        /* Button to go back home */
+        .home-button {
+            margin-top: 2rem;
+            padding: 0.75rem 2rem;
+            background-color: #38bdf8;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .home-button:hover {
+            background-color: #0ea5e9;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950">
+    
+    <canvas id="wave-canvas"></canvas>
+
+    <main class="error-container">
+        <div class="glass-container">
+            <h1 class="error-title">404</h1>
+            <h2 class="error-subtitle">Page Not Found</h2>
+            <p class="error-text">
+                Lost in the void? It seems the page you're looking for doesn't exist.
+            </p>
+            <a href="/" class="home-button">
+                Return Home
+            </a>
+        </div>
+    </main>
+
+    <script>
+        // Reusing the exact same 3D Wave background script for a consistent feel
+        document.addEventListener('DOMContentLoaded', function() {
+            const waveCanvas = document.getElementById('wave-canvas');
+            const waveScene = new THREE.Scene();
+            const waveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const waveRenderer = new THREE.WebGLRenderer({ canvas: waveCanvas, alpha: true });
+            waveRenderer.setSize(window.innerWidth, window.innerHeight);
+            waveRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const planeGeometry = new THREE.PlaneGeometry(100, 25, 200, 60);
+            const planeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x38bdf8, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.3 
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            waveScene.add(plane);
+            
+            waveCamera.position.z = 5;
+            waveCamera.position.y = 2.5;
+            
+            const waveAmbientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            waveScene.add(waveAmbientLight);
+            const wavePointLight = new THREE.PointLight(0x38bdf8, 1);
+            wavePointLight.position.set(5, 5, 5);
+            waveScene.add(wavePointLight);
+            
+            const originalVertices = plane.geometry.attributes.position.clone();
+            const clock = new THREE.Clock();
+
+            function animateWave() {
+                requestAnimationFrame(animateWave);
+                const elapsedTime = clock.getElapsedTime();
+                
+                const positions = plane.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const x = originalVertices.array[i];
+                    const y = originalVertices.array[i + 1];
+                    const z = Math.sin(x * 0.5 + elapsedTime) * 0.2 + Math.sin(y * 0.5 + elapsedTime) * 0.2;
+                    positions[i + 2] = z;
+                }
+                plane.geometry.attributes.position.needsUpdate = true;
+                waveRenderer.render(waveScene, waveCamera);
+            }
+            animateWave();
+
+            window.addEventListener('resize', () => {
+                waveRenderer.setSize(window.innerWidth, window.innerHeight);
+                waveCamera.aspect = window.innerWidth / window.innerHeight;
+                waveCamera.updateProjectionMatrix();
+            });
+        });
+    </script>
+</body>
+</html>
